@@ -50,10 +50,10 @@
             // Función para preprocesar la imagen
             const preprocessImage = (image) => {
                 return tf.browser.fromPixels(image)
-                    .mean(2, true)   // Convertir a escala de grises (promediamos los canales RGB)
-                    .toFloat()       // Convertimos la imagen a tipo float32
-                    .div(tf.scalar(255))  // Normalizamos los valores entre 0 y 1
-                    .resizeNearestNeighbor([28, 28]); // Redimensionamos la imagen a 28x28
+                    .mean(2, true)   // Convertir a escala de grises
+                    .toFloat()       // la imagen a tipo float32
+                    .div(tf.scalar(255))  // Normalizar los valores
+                    .resizeNearestNeighbor([28, 28]); // Redimensionar a 28x28
             };
 
             // Función para manejar la carga de la imagen
@@ -100,4 +100,5 @@
     </script>
 </body>
 </html>
+
 
