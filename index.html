@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autoencoder Denoiser</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Restauración de Imágenes (Denoising)</h1>
+        <p>Sube una imagen para limpiar el ruido.</p>
+        
+        <!-- Input para cargar la imagen -->
+        <input type="file" id="file-input" accept="image/*">
+        
+        <!-- Área para mostrar la imagen original -->
+        <div id="original-container">
+            <h3>Imagen Original</h3>
+            <img id="original-image" src="" alt="Imagen Original" />
+        </div>
+        
+        <!-- Área para mostrar la imagen procesada -->
+        <div id="denoised-container">
+            <h3>Imagen Restaurada</h3>
+            <img id="denoised-image" src="" alt="Imagen Restaurada" />
+        </div>
+        
+        <!-- Botón para procesar la imagen -->
+        <button id="process-btn">Procesar Imagen</button>
+    </div>
+
+    <!-- Cargar TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+    <!-- Script JS dentro de index.html -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Cargar el modelo de TensorFlow.js
+            console.log('Cargando modelo...');
+            const model = await tf.loadLayersModel('model/model.json');
+            console.log('Modelo cargado');
+
+            // Selección de elementos de la interfaz
+            const fileInput = document.getElementById('file-input');
+            const originalImage = document.getElementById('original-image');
+            const denoisedImage = document.getElementById('denoised-image');
+            const processBtn = document.getElementById('process-btn');
+
+            // Función para preprocesar la imagen
+            const preprocessImage = (image) => {
+                return tf.browser.fromPixels(image)
+                    .mean(2, true)   // Convertir a escala de grises (promediamos los canales RGB)
+                    .toFloat()       // Convertimos la imagen a tipo float32
+                    .div(tf.scalar(255))  // Normalizamos los valores entre 0 y 1
+                    .resizeNearestNeighbor([28, 28]); // Redimensionamos la imagen a 28x28
+            };
+
+            // Función para manejar la carga de la imagen
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const img = new Image();
+                        img.src = reader.result;
+                        img.onload = () => {
+                            originalImage.src = img.src;
+                            originalImage.style.display = 'block';  // Mostrar la imagen original
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Función para procesar la imagen cuando el usuario presiona el botón
+            processBtn.addEventListener('click', async () => {
+                // Validar que haya una imagen cargada
+                if (!originalImage.src) {
+                    alert('Por favor, carga una imagen primero');
+                    return;
+                }
+
+                // Preprocesar la imagen antes de pasársela al modelo
+                const imgTensor = preprocessImage(originalImage);
+
+                // Hacer la predicción usando el modelo
+                const prediction = model.predict(imgTensor.expandDims(0));
+
+                // Mostrar la imagen restaurada (predicción)
+                const restoredImage = prediction.squeeze().mul(tf.scalar(255)).clipByValue(0, 255).toInt();
+                const canvas = document.createElement('canvas');
+                await tf.browser.toPixels(restoredImage, canvas);
+
+                // Mostrar la imagen restaurada
+                denoisedImage.src = canvas.toDataURL();
+                denoisedImage.style.display = 'block';  // Mostrar la imagen restaurada
+            });
+        });
+    </script>
+</body>
+</html>
